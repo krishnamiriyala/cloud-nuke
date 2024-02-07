@@ -1,0 +1,9 @@
+[MASTER]
+
+disable=
+    missing-module-docstring,
+    missing-function-docstring,
+    broad-exception-caught,
+    too-many-branches,
+    too-many-locals,
+    too-many-statements,
