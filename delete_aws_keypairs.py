@@ -4,11 +4,7 @@ import argparse
 from boto3_client import ec2_client_iterator
 
 
-def list_amis(ec2_client, owner_id):
-    return ec2_client.describe_images(Owners=[owner_id])["Images"]
-
-
-def delete_amis(ec2_client, region, amis, prefix, live_action=False):
+def delete_key_pairs(ec2_client, region, prefix, live_action):
     if live_action:
         log = print
     else:
@@ -16,14 +12,14 @@ def delete_amis(ec2_client, region, amis, prefix, live_action=False):
         def log(text):
             return print(f"[DRYRUN] {text}")
 
-    for ami in amis:
-        if ami["Name"].startswith(prefix):
-            log(f"{region}/{ami['Name']} {ami['Name']} Deleting ...")
+    key_pairs = ec2_client.describe_key_pairs()["KeyPairs"]
+
+    for key_pair in key_pairs:
+        key_name = key_pair["KeyName"]
+        if key_name.startswith(prefix):
+            log(f"{region}/{key_name} Deleting Key Pair ...")
             if live_action:
-                ec2_client.deregister_image(ImageId=ami["ImageId"])
-        else:
-            if live_action:
-                log(f"{region}/{ami['Name']} {ami['Name']} Skipping ...")
+                ec2_client.delete_key_pair(KeyName=key_name)
 
 
 def main():
@@ -40,26 +36,14 @@ def main():
     args = parser.parse_args()
 
     for ec2_client, region in ec2_client_iterator():
-        delete_amis(
-            ec2_client,
-            region,
-            list_amis(ec2_client, args.owner_id),
-            args.prefix,
-            args.live_action,
-        )
+        delete_key_pairs(ec2_client, region, args.prefix, args.live_action)
 
     if not args.live_action:
         rerun_live = input("Do you want to rerun in live mode? (Y/N): ").strip().lower()
         if rerun_live == "y":
             args.live_action = True
             for ec2_client, region in ec2_client_iterator():
-                delete_amis(
-                    ec2_client,
-                    region,
-                    list_amis(ec2_client, args.owner_id),
-                    args.prefix,
-                    args.live_action,
-                )
+                delete_key_pairs(ec2_client, region, args.prefix, args.live_action)
 
 
 if __name__ == "__main__":

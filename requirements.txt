@@ -1,1 +1,4 @@
 boto3==1.34.37
+azure-mgmt-resource~=20.0.0
+azure-mgmt-network~=25.3.0
+azure-identity~=1.6.0
